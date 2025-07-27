@@ -1,5 +1,4 @@
 import hashlib
-import json
 from time import time
 
 class Blockchain:
@@ -13,12 +12,11 @@ class Blockchain:
             'timestamp': time(),
             'data': data,
             'prev_hash': prev_hash,
-            'hash': ''
         }
         block['hash'] = self.hash(block)
         self.chain.append(block)
         return block
 
     def hash(self, block):
-        return hashlib.sha256(json.dumps(block, sort_keys=True).encode()).hexdigest()
-
+        block_string = str(block['index']) + str(block['timestamp']) + str(block['data']) + block['prev_hash']
+        return hashlib.sha256(block_string.encode()).hexdigest()
