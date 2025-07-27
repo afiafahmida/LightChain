@@ -6,6 +6,10 @@ import hashlib
 app = Flask(__name__)
 bc = Blockchain()
 
+@app.route("/dashboard")
+def dashboard():
+    return send_from_directory('.', 'dashboard.html')
+
 @app.route("/join", methods=["POST"])
 def join():
     data = request.get_json()
