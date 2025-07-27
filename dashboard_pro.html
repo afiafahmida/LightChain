@@ -95,62 +95,75 @@
   <div class="chain" id="chain"></div>
 
   <script>
-    async function loadBlockchain() {
-      try {
-        const response = await fetch('/chain');
-        const data = await response.json();
-        const chainContainer = document.getElementById('chain');
-        chainContainer.innerHTML = '';
+  async function loadBlockchain() {
+    try {
+      const response = await fetch('/chain');
+      const data = await response.json();
+      const chainContainer = document.getElementById('chain');
+      chainContainer.innerHTML = '';
 
-        const chain = data.chain;
-        for (let i = 0; i < chain.length; i++) {
-          const block = chain[i];
-          if (!block.data || block.data === "Genesis Block") continue;
+      const chain = data.chain;
+      for (let i = 0; i < chain.length; i++) {
+        const block = chain[i];
+        if (!block.data || block.data === "Genesis Block") continue;
 
-          const div = document.createElement('div');
-          div.className = 'block';
-          div.innerHTML = `
-            <h3>Block #${block.index}</h3>
-            <div class="status ${block.data.status}">Status: ${block.data.status}</div>
-            <div class="data"><strong>Device ID:</strong> ${block.data.device_id}</div>
-            <div class="data"><strong>Firmware:</strong> ${block.data.firmware_hash}</div>
-            <div class="data"><strong>Hash:</strong> ${block.hash}</div>
-          `;
+        const div = document.createElement('div');
+        div.className = 'block';
+        const statusClass = block.data.status === 'approved' ? 'approved' : 'pending';
 
-          if (block.data.status === 'pending') {
-            const btn = document.createElement('button');
-            btn.className = 'button';
-            btn.textContent = 'Approve Device';
-            btn.onclick = async () => {
-              await fetch('/approve/' + block.index, { method: 'POST' });
-              loadBlockchain();
-            };
-            div.appendChild(btn);
-          }
+        const statusDiv = document.createElement('div');
+        statusDiv.className = 'status ' + statusClass;
+        statusDiv.innerText = `Status: ${block.data.status}`;
 
-          chainContainer.appendChild(div);
+        div.innerHTML = `
+          <h3>Block #${block.index}</h3>
+          <div class="data"><strong>Device ID:</strong> ${block.data.device_id}</div>
+          <div class="data"><strong>Firmware:</strong> ${block.data.firmware_hash}</div>
+          <div class="data"><strong>Hash:</strong> ${block.hash}</div>
+        `;
+        div.appendChild(statusDiv);
 
-          // draw connector line between blocks
-          if (i > 0) {
-            const connector = document.createElement('div');
-            connector.className = 'connector';
-            setTimeout(() => {
-              const prevBlock = chainContainer.children[i - 1];
-              const currBlock = chainContainer.children[i];
-              const left = prevBlock.offsetLeft + prevBlock.offsetWidth;
-              const right = currBlock.offsetLeft;
-              connector.style.left = left + 'px';
-              connector.style.width = (right - left) + 'px';
-            }, 100); // wait for layout
-            chainContainer.appendChild(connector);
-          }
+        if (block.data.status === 'pending') {
+          const btn = document.createElement('button');
+          btn.className = 'button';
+          btn.textContent = 'Approve Device';
+          btn.onclick = async () => {
+            btn.disabled = true;
+            btn.textContent = 'Approving...';
+            await fetch('/approve/' + block.index, { method: 'POST' });
+            // Update status immediately
+            block.data.status = 'approved';
+            statusDiv.innerText = "Status: approved";
+            statusDiv.className = "status approved";
+            btn.remove(); // remove the button
+          };
+          div.appendChild(btn);
         }
-      } catch (err) {
-        document.getElementById('chain').innerHTML = "<p style='color:red;'>Failed to load blockchain data.</p>";
-      }
-    }
 
-    loadBlockchain();
-  </script>
+        chainContainer.appendChild(div);
+
+        // draw connector
+        if (i > 0) {
+          const connector = document.createElement('div');
+          connector.className = 'connector';
+          setTimeout(() => {
+            const prevBlock = chainContainer.children[i - 1];
+            const currBlock = chainContainer.children[i];
+            const left = prevBlock.offsetLeft + prevBlock.offsetWidth;
+            const right = currBlock.offsetLeft;
+            connector.style.left = left + 'px';
+            connector.style.width = (right - left) + 'px';
+          }, 100);
+          chainContainer.appendChild(connector);
+        }
+      }
+    } catch (err) {
+      document.getElementById('chain').innerHTML = "<p style='color:red;'>Failed to load blockchain data.</p>";
+    }
+  }
+
+  loadBlockchain();
+</script>
+
 </body>
 </html>
