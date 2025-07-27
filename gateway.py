@@ -54,7 +54,7 @@ def chain():
 
 @app.route("/dashboard")
 def dashboard():
-    return send_from_directory('.', 'dashboard.html')
+    return send_from_directory('.', 'dashboard_pro.html')
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000)
