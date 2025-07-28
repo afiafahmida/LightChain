@@ -11,27 +11,34 @@ bc = Blockchain()
 @app.route("/join", methods=["POST"])
 def join():
     data = request.get_json()
+    device_id = data.get("device_id")
+    firmware_hash = data.get("firmware_hash")
 
-    if "device_id" not in data or "firmware_hash" not in data:
-        return jsonify({"error": "Missing device_id or firmware_hash"}), 400
+    if not device_id or not firmware_hash:
+        return jsonify({"error": "Missing required fields"}), 400
 
-    message = data["device_id"] + data["firmware_hash"]
-    print(f"📥 Received from device: {data['device_id']}")
+    # Check if device is already in the chain
+    for block in bc.chain:
+        block_data = block.get("data")
+        if isinstance(block_data, dict) and block_data.get("device_id") == device_id:
+            # If firmware hash matches
+            if block_data.get("firmware_hash") == firmware_hash:
+                return jsonify({
+                    "status": block_data.get("status", "pending"),
+                    "message": "Device already registered",
+                    "block_index": block["index"]
+                })
 
-    signature = hashlib.sha256(message.encode()).hexdigest()
-
-    block = bc.create_block(prev_hash=bc.chain[-1]['hash'], data={
-        "device_id": data["device_id"],
-        "firmware_hash": data["firmware_hash"],
-        "server_signature": signature,
-        "status": "pending"
-    })
+    # Device not found — create new pending block
+    data["status"] = "pending"
+    new_block = bc.create_block(bc.chain[-1]["hash"], data)
 
     return jsonify({
         "status": "registered (pending)",
-        "block_index": block["index"],
-        "server_signature": signature
+        "block_index": new_block["index"],
+        "message": "New device registered"
     })
+
 
 @app.route("/approve/<int:index>", methods=["POST"])
 def approve(index):
