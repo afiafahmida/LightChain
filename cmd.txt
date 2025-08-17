@@ -1,0 +1,8 @@
+cd ~
+git clone --depth 1 https://github.com/open-quantum-safe/oqs-provider.git
+cd oqs-provider
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DOQS_PROVIDER_BUILD_SHARED=ON ..
+make -j"$(nproc)"
+sudo make install
+sudo ldconfig
