@@ -3,11 +3,11 @@
 #include "mbedtls/sha256.h"
 
 // WiFi credentials
-const char* ssid = "AUSTSat";
-const char* password = "@austsat456";
+const char* ssid = "Council";
+const char* password = "Rafidona1964";
 
 // MQTT broker settings
-const char* mqtt_server = "192.168.1.2";
+const char* mqtt_server = "192.168.0.108";
 const int mqtt_port = 1883;
 const char* join_topic = "lightchain/devices/join";
 const char* client_id = "esp32-DEVICE-001"; // MQTT client ID
