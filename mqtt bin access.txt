@@ -1,0 +1,19 @@
+For ESP8266 end:-
+Install in Arduino: 
+1. Adafruit Feather HUZZAH ESP8266
+2. PubSubClient by Nick O'Leary
+For creating bin file: Go to 'Sketch->Export Compiled Binary' 
+
+For raspberrypi:-
+bash for mqtt broker:
+sudo apt install mosquitto mosquitto-clients -y
+sudo systemctl start mosquitto
+sudo systemctl enable mosquito
+
+run gateway_mqtt_bin.py
+
+
+Then upload the code of esp8266.
+
+
+
