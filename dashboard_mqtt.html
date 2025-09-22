@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LightChain IoT Blockchain Dashboard (MQTT)</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    header { background: #1e293b; padding: 20px; text-align: center; font-size: 2em; font-weight: bold; color: #38bdf8; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+    .chain { display: flex; align-items: center; justify-content: start; overflow-x: auto; padding: 40px; gap: 60px; position: relative; }
+    .block { background: #1e293b; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); min-width: 280px; max-width: 280px; flex-shrink: 0; position: relative; border: 2px solid #38bdf8; transition: transform 0.3s ease; }
+    .block:hover { transform: translateY(-5px); }
+    .block h3 { margin-top: 0; color: #38bdf8; }
+    .data { font-family: monospace; background: #0f172a; padding: 10px; border-radius: 6px; margin-top: 10px; white-space: pre-wrap; word-break: break-word; }
+    .status { margin-top: 10px; font-weight: bold; }
+    .status.pending { color: #facc15; }
+    .status.approved { color: #22c55e; }
+    .button { margin-top: 15px; padding: 8px 16px; background-color: #38bdf8; color: #0f172a; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .button:hover { background-color: #0ea5e9; }
+    .connector { position: absolute; top: 50%; height: 2px; background: #38bdf8; z-index: 0; transition: width 0.3s ease; }
+  </style>
+</head>
+<body>
+  <header>🔗 LightChain IoT Blockchain Dashboard (MQTT)</header>
+  <div class="chain" id="chain"></div>
+
+  <script>
+    const MQTT_BROKER = 'ws://localhost:9001'; // configure your MQTT broker's WebSocket address
+    const client = mqtt.connect(MQTT_BROKER);
+
+    client.on('connect', () => {
+      client.subscribe('lightchain/chain/response');
+      loadBlockchain();
+    });
+
+    client.on('message', (topic, message) => {
+      if (topic === 'lightchain/chain/response') {
+        const data = JSON.parse(message.toString());
+        renderChain(data.chain);
+      }
+    });
+
+    function loadBlockchain() {
+      client.publish('lightchain/chain/request', '');
+    }
+
+    function renderChain(chain) {
+      const chainContainer = document.getElementById('chain');
+      chainContainer.innerHTML = '';
+      for (let i = 0; i < chain.length; i++) {
+        const block = chain[i];
+        if (!block.data || block.data === "Genesis Block") continue;
+        const div = document.createElement('div');
+        div.className = 'block';
+        const statusClass = block.data.status === 'approved' ? 'approved' : 'pending';
+        const statusDiv = document.createElement('div');
+        statusDiv.className = 'status ' + statusClass;
+        statusDiv.innerText = `Status: ${block.data.status}`;
+        div.innerHTML = `
+          <h3>Block #${block.index}</h3>
+          <div class="data"><strong>Device ID:</strong> ${block.data.device_id}</div>
+          <div class="data"><strong>Firmware:</strong> ${block.data.firmware_hash}</div>
+          <div class="data"><strong>Hash:</strong> ${block.hash}</div>
+        `;
+        div.appendChild(statusDiv);
+
+        if (block.data.status === 'pending') {
+          const btn = document.createElement('button');
+          btn.className = 'button';
+          btn.textContent = 'Approve Device';
+          btn.onclick = () => {
+            btn.disabled = true;
+            btn.textContent = 'Approving...';
+            client.publish('lightchain/devices/approve', JSON.stringify({ block_index: block.index }));
+            // Optimistically update UI
+            block.data.status = 'approved';
+            statusDiv.innerText = "Status: approved";
+            statusDiv.className = "status approved";
+            btn.remove();
+          };
+          div.appendChild(btn);
+        }
+        chainContainer.appendChild(div);
+
+        // draw connector
+        if (i > 0) {
+          const connector = document.createElement('div');
+          connector.className = 'connector';
+          setTimeout(() => {
+            const prevBlock = chainContainer.children[i - 1];
+            const currBlock = chainContainer.children[i];
+            const left = prevBlock.offsetLeft + prevBlock.offsetWidth;
+            const right = currBlock.offsetLeft;
+            connector.style.left = left + 'px';
+            connector.style.width = (right - left) + 'px';
+          }, 100);
+          chainContainer.appendChild(connector);
+        }
+      }
+    }
+  </script>
+</body>
+</html>
